@@ -42,6 +42,7 @@ date: 2026-03-13
 > [!code] Traditional Vector RAG vs. PageIndex Architecture
 
 **Traditional Vector RAG Pipeline:**
+
 ```python
 from sentence_transformers import SentenceTransformer
 import faiss, openai
@@ -62,9 +63,11 @@ def traditional_rag(document_text, user_query):
         model="gpt-4o",
         messages=[{"role": "user", "content": f"Context: {retrieved_context}\nAnswer: {user_query}"}]
     ).choices[0].message.content
-    ```
+```
+
 
 **PageIndex (Reasoning-Based) Pipeline**
+
 
 ```python
 import openai
@@ -89,9 +92,11 @@ def pageindex_rag(document_tree, user_query):
         model="gpt-4o",
         messages=[{"role": "user", "content": f"Context: {exact_context}\nAnswer: {user_query}"}]
     ).choices[0].message.content
-    ```
+```
+
 
 ## References & Resources
+
 
 > [!bookmark] References
 > 
