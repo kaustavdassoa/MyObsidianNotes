@@ -1,4 +1,3 @@
-
 ### **Phase 1: The Core Foundation**
 - **Routing and Endpoints 🛣️**
     - Path operations (`GET`, `POST`, `PUT`, `DELETE`).
