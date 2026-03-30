@@ -33,7 +33,7 @@ The **"Agent Tools & Interoperability with Model Context Protocol (MCP)"** white
 ___
 Additional Notes 
 
-![](../../../../Notes/ZAttachments/Pasted%20image%2020260328185809.png)
+![](../../../../MyNotes/ZAttachments/Pasted%20image%2020260328185809.png)
 
 ### **Tool Call**
 
