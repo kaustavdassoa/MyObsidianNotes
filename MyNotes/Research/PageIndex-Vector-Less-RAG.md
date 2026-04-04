@@ -134,9 +134,10 @@ def pageindex_rag(document_tree, user_query):
 
 > [!question] Future Research
 > 
-> - How can we implement a **Hybrid Pipeline** that uses Vector RAG to find the correct document among millions, and then seamlessly switches to PageIndex to drill down _inside_ that specific document?
+> - [ ] How can we implement a **Hybrid Pipeline** that uses Vector RAG to find the correct document among millions, and then seamlessly switches to PageIndex to drill down _inside_ that specific document?
 >     
-> - What is the specific architecture for setting up a Re-ranker in a standard Hybrid RAG pipeline?
+> - [ ] What is the specific architecture for setting up a Re-ranker in a standard Hybrid RAG pipeline?
 >     
-> - How does the Neo4j implementation handle automatic updates to the graph database when the underlying PDF source is modified?
->
+> - [ ] How does the Neo4j implementation handle automatic updates to the graph database when the underlying PDF source is modified?
+> 
+>- [ ] What is the difference between RAG , agentic RAG and Multi - agent RAG ?
