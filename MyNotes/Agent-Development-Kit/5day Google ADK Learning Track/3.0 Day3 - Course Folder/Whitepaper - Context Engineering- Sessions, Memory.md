@@ -158,18 +158,136 @@ When moving an agent to production - the flowing are the three things that one n
   session data is ever written to storage. Tools like Google Model Armor can be leveraged for this - "*Model Armor is a Google Cloud service designed to enhance the security and safety of your AI applications. It works by proactively screening LLM prompts and responses, protecting against various risks and ensuring responsible AI practices.*".
 - Regulations like GDPR and CCPA also needs to be keep in mind. 
 
-```python 
+**Google Model Armor**
+1. A user provides a prompt to the application.
+2. Model Armor inspects the incoming prompt for potentially sensitive  content.
+3. The prompt (or sanitized prompt) is sent to the LLM.
+4. The LLM generates a response.
+5. Model Armor inspects the generated response for potentially sensitive content.
+6. The response (or sanitized response) is sent to the user. Model Armor sends a detailed description of triggered and untriggered filters in the response.
 
-"""
-	    1. A user provides a prompt to the application.
-		2. Model Armor inspects the incoming prompt for potentially sensitive  content.
-		3. The prompt (or sanitized prompt) is sent to the LLM.
-		4. The LLM generates a response.
-		5. Model Armor inspects the generated response for potentially sensitive content.
-		6. The response (or sanitized response) is sent to the user. Model Armor sends a detailed description of triggered and untriggered filters in the response.
+**Managing long context conversation: tradeoffs and optimizations**
 
-"""
-```		
+Agents determine when session history compaction is necessary using specific **trigger mechanisms** that signal it is time to condense the conversation log. Because sophisticated compaction strategies, such as using an LLM to generate recursive summaries, can be computationally expensive and time-consuming, they must be executed thoughtfully—typically as an asynchronous background process so the user is not kept waiting.
+
+To manage this, agents generally rely on **three distinct categories** of triggers to decide when compaction is necessary:
+
+- **Count-Based Triggers:** This is a straightforward threshold approach where the agent initiates compaction once the conversation surpasses a predefined limit, such as a **specific token size or turn count threshold**. This method is often considered "good enough" for routinely managing an LLM's context length constraints.
+- **Time-Based Triggers:** Instead of measuring the size of the conversation, this mechanism monitors for a **lack of activity**. If a user stops interacting with the agent for a set period of time—such as 15 or 30 minutes—the system will automatically run a compaction job in the background while the agent is idle.
+- **Event-Based Triggers (Semantic/Task Completion):** In this more context-aware approach, the agent dynamically decides to trigger compaction when it detects that a **specific task, sub-goal, or topic of conversation has naturally concluded**.
+
+By relying on these triggers, agents can effectively condense verbose dialogue into key facts and summaries, ensuring they carry only the most essential information forward without slowing down the immediate user experience.
+
+## **Memory**
+
+### Benefit of robust memory management 
+
+A robust memory system transforms a basic chatbot into a sophisticated, intelligent agent by unlocking several key benefits:
+
+- **Personalization:** Memory allows an agent to remember user preferences, specific facts, and past interactions to tailor its future responses. For example, recalling a user's preferred airline seat or tracking the outcome of a task from weeks ago creates a highly personalized and continuous user experience.
+- **Context Window Management:** As conversations grow, the full dialogue history can easily exceed a Language Model's token limits. Memory systems help compact this history by extracting key facts and generating summaries, which preserves the necessary context without sending thousands of tokens per turn, ultimately reducing both operational cost and latency.
+- **Data Mining and Insight:** By aggregating and analyzing stored memories across multiple users in a privacy-preserving manner, organizations can extract valuable insights from conversational noise. For instance, a retail agent might detect a pattern of users asking about a specific product's return policy, automatically flagging a potential business issue.
+- **Agent Self-Improvement and Adaptation:** An agent can learn from its previous executions by generating "procedural memories" about its own performance. By recording which reasoning paths, tools, or strategies resulted in successful outcomes, the agent builds a reusable "playbook" that allows it to autonomously adapt and improve its problem-solving capabilities over time.
+
+## The roles of the different components in managing memory effectively 
+
+Creating, storing, and utilizing memory in an AI agent system is a highly collaborative process where each layer of the technology stack performs a specific, vital function. The effective management of memory relies on the interplay of the following core components:
+
+- **The User:** The user acts as the origin point by providing the raw source data that forms the basis of memories. This data is usually captured implicitly through natural conversation, though in some systems, users might provide memories directly via explicit inputs like a form.
+- **The Agent (Developer Logic):** This component is responsible for orchestrating calls to the memory manager and determining **what and when to remember**. Developers can hardcode this logic so that memory is always retrieved and generated on every turn, or they can implement more advanced "memory-as-a-tool" patterns where the agent's LLM is empowered to autonomously decide when it needs to retrieve or generate memory.
+- **The Agent Framework (e.g., ADK, LangGraph):** Acting as the system's "plumbing," the framework provides the necessary structure and tools for memory interaction. It dictates how the developer's logic accesses the conversation history and interacts with the memory manager. Crucially, the framework itself does not manage long-term storage; instead, it defines how retrieved memories are appropriately formatted and "stuffed" into the LLM's context window for inference.
+- **The Session Storage (e.g., Agent Engine Sessions, Spanner, Redis):** This component is responsible for storing the chronological, turn-by-turn events of the current session. This raw dialogue acts as the foundational data source that will eventually be ingested by the memory manager to generate persistent memories.
+- **The Memory Manager (e.g., Agent Engine Memory Bank, Mem0, Zep):** This is the specialized, active service that handles the entire lifecycle of a memory once the source data is provided. Instead of just passively storing data, the memory manager handles the complex tasks of * *  
+	 - **extraction** (distilling key information from the noise),
+	 - **consolidation** (curating and merging duplicative entities to prevent contradictory facts), 
+	 - **storage** (saving the processed memory to a persistent database), 
+	 - **retrieval** (fetching the most relevant memories to provide context for new interactions).
+
+**RAG Engines Vs Memory Managers**
+The memory and RAG have two district, complementary role to play : RAG makes
+an agent an expert on facts, while memory makes it an expert on the user  
+
+|Feature|RAG Engines|Memory Managers|
+|---|---|---|
+|**Primary Goal**|To inject external, factual knowledge into the context.|To create a personalized and stateful experience, allowing the agent to remember facts, adapt to the user over time, and maintain long-running context.|
+|**Data Source**|A static, pre-indexed external knowledge base (e.g., PDFs, wikis, documents, APIs).|The dialogue between the user and agent.|
+|**Isolation Level**|**Generally Shared:** The knowledge base is typically a global, read-only resource accessible by all users to ensure consistent, factual answers.|**Highly Isolated:** Memory is almost always scoped per-user to prevent data leaks.|
+|**Information Type**|Static, factual, and authoritative, often containing domain-specific data, product details, or technical documentation.|Dynamic and generally user-specific, derived from conversation, which inherently carries some level of uncertainty.|
+|**Write Patterns**|**Batch processing:** Triggered via an offline, administrative action.|**Event-based processing:** Triggered at a specific cadence (e.g., every turn or at session end) or via "Memory-as-a-tool" where the agent decides to generate memories.|
+|**Read Patterns**|Almost always retrieved **"as-a-tool"** when the agent decides the user's query requires external information.|Two common patterns: **Memory-as-a-tool** (when the user's query requires additional info about the user) or **Static retrieval** (retrieved automatically at the start of each turn).|
+|**Data Format**|A natural-language "chunk".|A natural language snippet or a structured profile.|
+|**Data Preparation**|**Chunking and Indexing:** Source documents are broken into smaller chunks, converted to embeddings, and stored for fast lookup.|**Extraction and consolidation:** Key details are extracted from the conversation, ensuring the content is not duplicative or contradictory.|
+###  Types of Memory
+
+An AI agent's memory can be categorised in several different ways, depending on the cognitive function of the information, its structural format, how it was created, its scope, and its modality.
+
+Here is a breakdown of the different types of memories:
+
+**1. By Type of Information (Cognitive Function)** Drawing from cognitive science, memory is split into two primary functional categories:
+
+- **Declarative memory ("knowing what"):** This encompasses the facts, figures, and events that the agent can explicitly state. It includes both general world knowledge (Semantic memory) and specific facts about the user (Entity/Episodic memory).
+- **Procedural memory ("knowing how"):** This represents the agent's knowledge of skills, workflows, and strategies. It acts as a "playbook" that guides the agent's actions by demonstrating the correct sequence of steps or tool calls required to complete a task successfully.
+
+**2. By Content Structure** The substance of a memory can be extracted and stored in different formats:
+
+- **Structured memories:** Information stored in universal, developer-defined formats such as JSON or dictionaries (e.g., `{"seat_preference": "Window"}`).
+- **Unstructured memories:** Natural language descriptions that summarise the essence of a longer interaction, event, or topic (e.g., "The user prefers a window seat.").
+
+**3. By Creation Mechanism** Memories can be classified by how the agent acquired the information:
+
+- **Explicit memories:** Created when a user gives the agent a direct, explicit command to remember a fact (e.g., "Remember my anniversary is October 26th").
+- **Implicit memories:** Created when the agent autonomously infers and extracts meaningful information from the natural flow of the conversation without being directly instructed to do so.
+
+**4. By Scope (Who or what the memory describes)** Memories are defined by the entity they are tied to, which dictates how they are aggregated and retrieved:
+
+- **User-Level scope:** Memories linked to a specific user ID that persist across all of their sessions. This is the most common implementation, allowing the agent to build a long-term understanding of a user's preferences.
+- **Session-Level scope:** Memories isolated to a specific session. This scope is used to compact long, verbose conversations into a concise set of key facts for that specific interaction.
+- **Application-Level scope (Global):** Memories that are accessible to all users of an application. This is commonly used to establish shared context, broadcast system-wide information, or store shared procedural memories (provided they are strictly sanitised of personal data).
+
+**5. By Modality (Multimodal Memory)** This describes how the agent handles non-textual information, distinguishing between the source of the memory and its final stored format:
+
+- **Memory from a multimodal source:** The agent processes non-textual data, such as transcribing a voice memo, but stores the extracted insight purely as text. This is the most common approach for contemporary memory managers.
+- **Memory with Multimodal Content:** A more advanced method where the non-textual media itself (such as an uploaded image file) is stored directly within the memory.
+
+**6. By Management Location** Finally, memories can be distinguished by where the logic resides:
+
+- **Internal Memory:** Memory management built directly into the agent framework.
+- **External Memory:** Memory management offloaded to a separate, specialised service (like Agent Engine Memory Bank or Zep) which provides sophisticated features like automatic summarisation and entity extraction.
 
 
-Page # 21
+### Memory Creation 
+
+Memories can be classified by the mechanisms through which they are created and how the agent acquires the information. The primary creation mechanisms based on how information is derived are:
+
+- **Explicit memories:** These are created when a user issues a direct command instructing the agent to remember a specific fact, such as explicitly telling it to "Remember my anniversary is October 26th".
+- **Implicit memories:** These are generated when the agent autonomously infers and extracts meaningful information from the natural flow of the conversation, without receiving a direct command to do so.
+
+Furthermore, the mechanisms for creating these memories can be distinguished by where the memory extraction logic resides:
+
+- **Internal Memory:** The mechanism for generating memories is built directly into the agent framework itself. While this is convenient for getting started, it often lacks more advanced features.
+- **External Memory:** The agent framework makes API calls to a separate, specialised service (such as Agent Engine Memory Bank, Mem0, or Zep) which is dedicated entirely to managing, storing, retrieving, and processing memories.
+
+Finally, agents rely on specific **triggering mechanisms** to determine exactly _when_ the memory generation process should be initiated. These triggers include:
+
+- **Session Completion:** Running the generation process at the end of a multi-turn session.
+- **Turn Cadence:** Generating memories after a specific number of turns.
+- **Real-Time:** Extracting memories after every single turn.
+- **Explicit Command:** Activating the process upon a direct user command.
+
+More advanced architectures also employ **Memory-as-a-Tool**, where the agent is equipped with a tool that allows it to analyse the conversation and autonomously decide for itself when to trigger memory generation.
+
+The confidence in a memory must evolve. Confidence increases through corroboration, such as when a multiple trusted sources providing consistent information. However, an effective memory system must also actively curate its existing knowledge though pruning - a process the delete/forget memory that are no longer needed. The pruning can be trigger by several factors like :
+- **Time based decay**
+- **Low confidence** 
+- **Irrelevance** 
+
+An agent memory can't be static it needs to be evolving - the following are the several process through which memory generation can be triggered.
+
+- **Session Completion** 
+- **Real-time memory generation** - after each call.
+- **Explicit Command** - use activated the generation process (example : user mention remember this : my birthday is on 25th May.) 
+
+However, the choice of the trigger involves balancing the trade-offs between - Frequency Vs Cost. 
+
+### **Memory-as-a-tool.** 
+
