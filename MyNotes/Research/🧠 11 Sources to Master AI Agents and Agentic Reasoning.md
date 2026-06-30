@@ -1,6 +1,17 @@
-Welcome to your structured knowledge base for Agentic AI. This document is formatted for Obsidian to help you link, tag, and explore the cutting edge of AI agent architectures, capabilities, and security.
-
 ---
+title: "Untitled knowledge file"
+slug: "untitled-knowledge-file"
+description: "Before diving into the papers, it is essential to consider the **Google Open Knowledge Format (OKF)**, recently introduced by Google Cloud Data Analytics. OKF formalizes the LLM-wi"
+type: concept
+source_format: "md"
+tags:
+  - markdown
+  - bundle
+  - okf
+timestamp: "2026-06-27T00:00:00.000Z"
+---
+
+# Untitled knowledge file
 
 ## 🌐 Google Open Knowledge Format (OKF) & Data Sharing
 

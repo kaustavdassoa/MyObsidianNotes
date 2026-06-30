@@ -1,3 +1,16 @@
+---
+title: "Agentic AI Papers Survey"
+slug: "agentic-ai-papers-survey"
+description: "Below is a chronologically sorted table featuring a mix of the seminal breakthroughs and the most recent comprehensive surveys mapping the current state of the art in agentic softw"
+type: concept
+source_format: "md"
+tags:
+  - markdown
+  - bundle
+  - okf
+timestamp: "2026-06-27T00:00:00.000Z"
+---
+
 # Agentic AI Papers Survey
 
 Below is a chronologically sorted table featuring a mix of the seminal breakthroughs and the most recent comprehensive surveys mapping the current state of the art in agentic software architecture.

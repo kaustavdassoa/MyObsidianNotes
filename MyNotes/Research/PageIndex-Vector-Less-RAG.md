@@ -1,4 +1,19 @@
 ---
+title: "Untitled knowledge file"
+slug: "untitled-knowledge-file"
+description: "> [!summary] Quick Recap > This note synthesizes a comprehensive comparison between traditional **Vector RAG** (semantic similarity search) and **PageIndex** (a reasoning-based, ve"
+type: concept
+source_format: "md"
+tags:
+  - markdown
+  - bundle
+  - okf
+timestamp: "2026-06-27T00:00:00.000Z"
+---
+
+# Untitled knowledge file
+
+---
 tags: [AI, RAG, PageIndex, Vector-Database, LLM, Knowledge-Management]
 date: 2026-03-13
 ---
